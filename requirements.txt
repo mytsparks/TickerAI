@@ -1,0 +1,9 @@
+dash>=2.14.0
+dash-bootstrap-components>=1.5.0
+yfinance
+pandas
+numpy
+plotly
+requests
+anthropic>=0.25.0
+google-genai

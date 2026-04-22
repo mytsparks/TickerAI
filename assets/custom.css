@@ -1,0 +1,113 @@
+/* ── Bootstrap form-control / form-select inputs ── */
+.form-control,
+.form-select {
+    background-color: #2b2b2b !important;
+    color: #e0e0e0 !important;
+    border-color: #555 !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: #333 !important;
+    color: #fff !important;
+    border-color: #375a7f !important;
+    box-shadow: 0 0 0 0.2rem rgba(55, 90, 127, 0.35) !important;
+}
+
+.form-control::placeholder {
+    color: #888 !important;
+}
+
+/* Dropdown arrow colour fix */
+.form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23adb5bd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+}
+
+
+/* ── Number input spinners ── */
+/* Hide the native browser spin buttons so the dark inputs look clean */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
+/* ── Pill mode switcher ── */
+.pill-switcher .btn-group {
+    display: flex !important;
+    gap: 0 !important;
+}
+
+/*
+ * DBC RadioItems wraps each option in its own <div>, which means every label
+ * is both :first-of-type and :last-of-type inside its wrapper.
+ * display:contents collapses the wrapper divs out of the flex layout so the
+ * labels sit directly next to each other with no gap.
+ */
+.pill-switcher .btn-group > div {
+    display: contents;
+}
+
+.pill-switcher .btn {
+    background-color: #2c4f7a !important;
+    color: #c8dff5 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    font-weight: 500;
+    min-width: 80px;
+    margin: 0 !important;
+    padding: 0.45rem 1.6rem;
+    transition: background-color 0.15s ease;
+}
+
+/* Round the left end of the first button and right end of the last */
+.pill-switcher .btn-group > div:first-child > label {
+    border-radius: 50px 0 0 50px !important;
+}
+
+.pill-switcher .btn-group > div:last-child > label {
+    border-radius: 0 50px 50px 0 !important;
+}
+
+.pill-switcher .btn.active {
+    background-color: #4a90d9 !important;
+    color: #fff !important;
+}
+
+.pill-switcher .btn:hover:not(.active) {
+    background-color: #3a6a9e !important;
+    color: #fff !important;
+}
+
+.pill-switcher .btn:focus,
+.pill-switcher .btn:focus-visible {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* ── Offcanvas dark theme ── */
+.offcanvas {
+    background-color: #2b2b2b !important;
+    color: #e0e0e0 !important;
+}
+
+.offcanvas-header {
+    border-bottom: 1px solid #444 !important;
+}
+
+.offcanvas-title {
+    color: #e0e0e0 !important;
+}
+
+.offcanvas-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(180%) !important;
+    opacity: 0.7;
+}
+
+.offcanvas-header .btn-close:hover {
+    opacity: 1;
+}
