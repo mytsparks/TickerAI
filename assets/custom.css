@@ -25,7 +25,6 @@
 
 
 /* ── Number input spinners ── */
-/* Hide the native browser spin buttons so the dark inputs look clean */
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {
     -webkit-appearance: none;
