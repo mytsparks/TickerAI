@@ -67,6 +67,7 @@ _GEMINI_MODELS = [
     {"label": "gemini-1.5-flash", "value": "gemini-1.5-flash"},
 ]
 
+
 # ---------------------------------------------------------------------------
 # Backtest default dates
 # ---------------------------------------------------------------------------
@@ -86,6 +87,7 @@ provider_offcanvas = dbc.Offcanvas(
                 {"label": "Ollama (Local)",     "value": "ollama"},
                 {"label": "Claude (Anthropic)", "value": "claude"},
                 {"label": "Google Gemini",      "value": "gemini"},
+                {"label": "OpenAI",             "value": "openai"},
             ],
             value="ollama",
             size="sm",
@@ -109,6 +111,15 @@ provider_offcanvas = dbc.Offcanvas(
             value="llama3",
             size="sm",
             className="mb-3",
+        ),
+        dbc.Input(
+            id="inp-model-custom",
+            type="text",
+            size="sm",
+            placeholder="e.g. gpt-4o-mini, gpt-oss-20b…",
+            value="gpt-4o-mini",
+            className="mb-3",
+            style={"display": "none"},
         ),
         html.Div([
             html.Label("API Key", className="mb-1 fw-semibold small text-secondary"),
@@ -508,22 +519,27 @@ def _fetch_ollama_models(base_url="http://localhost:11434"):
 
 # 1. Populate model dropdown and toggle API key / pull section
 @app.callback(
-    Output("api-key-container", "style"),
-    Output("refresh-btn-col",   "style"),
-    Output("pull-section",      "style"),
-    Output("dd-ai-model",       "options"),
-    Output("dd-ai-model",       "value"),
-    Input("dd-provider",        "value"),
-    Input("btn-refresh-models", "n_clicks"),
-    State("dd-ai-model",        "value"),
+    Output("api-key-container",  "style"),
+    Output("refresh-btn-col",    "style"),
+    Output("pull-section",       "style"),
+    Output("dd-ai-model",        "options"),
+    Output("dd-ai-model",        "value"),
+    Output("dd-ai-model",        "style"),
+    Output("inp-model-custom",   "style"),
+    Input("dd-provider",         "value"),
+    Input("btn-refresh-models",  "n_clicks"),
+    State("dd-ai-model",         "value"),
 )
 def on_provider_change(provider, _refresh, current_model):
+    show = {"display": "block"}
+    hide = {"display": "none"}
     if provider == "claude":
-        return ({"display": "block"}, {"display": "none"}, {"display": "none"},
-                _CLAUDE_MODELS, _CLAUDE_MODELS[0]["value"])
+        return (show, hide, hide, _CLAUDE_MODELS, _CLAUDE_MODELS[0]["value"], show, hide)
     elif provider == "gemini":
-        return ({"display": "block"}, {"display": "none"}, {"display": "none"},
-                _GEMINI_MODELS, _GEMINI_MODELS[0]["value"])
+        return (show, hide, hide, _GEMINI_MODELS, _GEMINI_MODELS[0]["value"], show, hide)
+    elif provider == "openai":
+        # Return a dummy options list; the text input is used instead
+        return (show, hide, hide, [], "", hide, show)
     else:  # ollama
         options = _fetch_ollama_models()
         if not options:
@@ -531,8 +547,7 @@ def on_provider_change(provider, _refresh, current_model):
         default = (current_model
                    if any(o["value"] == current_model for o in options)
                    else options[0]["value"])
-        return ({"display": "none"}, {"display": "block"}, {"display": "block"},
-                options, default)
+        return (hide, show, show, options, default, show, hide)
 
 
 # 2a. Pull Ollama model (background thread with streaming progress)
@@ -615,17 +630,20 @@ def update_pull_status(_):
 # 2b. Apply provider config
 @app.callback(
     Output("provider-msg", "children"),
-    Input("btn-apply-provider", "n_clicks"),
-    State("dd-provider",    "value"),
-    State("dd-ai-model",    "value"),
-    State("inp-api-key",    "value"),
-    State("dd-personality", "value"),
+    Input("btn-apply-provider",  "n_clicks"),
+    State("dd-provider",         "value"),
+    State("dd-ai-model",         "value"),
+    State("inp-model-custom",    "value"),
+    State("inp-api-key",         "value"),
+    State("dd-personality",      "value"),
     prevent_initial_call=True,
 )
-def apply_provider(_, provider, model, api_key, personality):
+def apply_provider(_, provider, model_select, model_custom, api_key, personality):
     from providers import create_provider, PERSONALITIES
+    provider = provider or "ollama"
+    model = (model_custom or "gpt-4o-mini").strip() if provider == "openai" else (model_select or "llama3")
     try:
-        p = create_provider(provider or "ollama", model or "llama3", api_key or "")
+        p = create_provider(provider, model, api_key or "")
         with state.lock:
             state.provider      = p
             state.provider_name = provider or "ollama"

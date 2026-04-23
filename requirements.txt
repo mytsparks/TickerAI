@@ -7,3 +7,4 @@ plotly
 requests
 anthropic>=0.25.0
 google-genai
+openai>=1.0.0

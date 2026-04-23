@@ -293,6 +293,29 @@ class GeminiProvider(BaseProvider):
             return TradingDecision("HOLD", 0.5, f"Gemini error: {e}")
 
 
+class OpenAIProvider(BaseProvider):
+    def __init__(self, model: str, api_key: str):
+        try:
+            from openai import OpenAI
+            self._client = OpenAI(api_key=api_key)
+        except ImportError:
+            raise ImportError("openai package not installed. Run: pip install openai")
+        self.model = model
+
+    def decide(self, context: dict) -> TradingDecision:
+        prompt = _build_prompt(context)
+        try:
+            resp = self._client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=512,
+            )
+            text = resp.choices[0].message.content or ""
+            return _parse_response(text)
+        except Exception as e:
+            return TradingDecision("HOLD", 0.5, f"OpenAI error: {e}")
+
+
 def create_provider(name: str, model: str, api_key: str = "") -> BaseProvider:
     name = name.lower().strip()
     if name == "ollama":
@@ -305,5 +328,9 @@ def create_provider(name: str, model: str, api_key: str = "") -> BaseProvider:
         if not api_key:
             raise ValueError("API key required for Gemini provider")
         return GeminiProvider(model=model or "gemini-2.0-flash", api_key=api_key)
+    elif name == "openai":
+        if not api_key:
+            raise ValueError("API key required for OpenAI provider")
+        return OpenAIProvider(model=model or "gpt-4o-mini", api_key=api_key)
     else:
-        raise ValueError(f"Unknown provider: '{name}'. Choose from: ollama, claude, gemini")
+        raise ValueError(f"Unknown provider: '{name}'. Choose from: ollama, claude, gemini, openai")
