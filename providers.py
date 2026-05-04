@@ -294,10 +294,20 @@ class GeminiProvider(BaseProvider):
 
 
 class OpenAIProvider(BaseProvider):
+<<<<<<< HEAD
     def __init__(self, model: str, api_key: str):
         try:
             from openai import OpenAI
             self._client = OpenAI(api_key=api_key)
+=======
+    def __init__(self, model: str, api_key: str, base_url: str = ""):
+        try:
+            from openai import OpenAI
+            kwargs = {"api_key": api_key}
+            if base_url:
+                kwargs["base_url"] = base_url
+            self._client = OpenAI(**kwargs)
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
         except ImportError:
             raise ImportError("openai package not installed. Run: pip install openai")
         self.model = model
@@ -316,7 +326,11 @@ class OpenAIProvider(BaseProvider):
             return TradingDecision("HOLD", 0.5, f"OpenAI error: {e}")
 
 
+<<<<<<< HEAD
 def create_provider(name: str, model: str, api_key: str = "") -> BaseProvider:
+=======
+def create_provider(name: str, model: str, api_key: str = "", **kwargs) -> BaseProvider:
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
     name = name.lower().strip()
     if name == "ollama":
         return OllamaProvider(model=model or "llama3")
@@ -331,6 +345,29 @@ def create_provider(name: str, model: str, api_key: str = "") -> BaseProvider:
     elif name == "openai":
         if not api_key:
             raise ValueError("API key required for OpenAI provider")
+<<<<<<< HEAD
         return OpenAIProvider(model=model or "gpt-4o-mini", api_key=api_key)
     else:
         raise ValueError(f"Unknown provider: '{name}'. Choose from: ollama, claude, gemini, openai")
+=======
+        return OpenAIProvider(
+            model=model or "gpt-oss-20b",
+            api_key=api_key,
+            base_url=kwargs.get("base_url", ""),
+        )
+    elif name == "committee":
+        if not api_key:
+            raise ValueError("API key required for Committee provider")
+        from committee import CommitteeProvider
+        return CommitteeProvider(
+            openai_api_key=api_key,
+            tavily_api_key=kwargs.get("tavily_api_key", ""),
+            enable_fundamental=kwargs.get("enable_fundamental", True),
+            enable_news=kwargs.get("enable_news", True),
+            enable_reflection=kwargs.get("enable_reflection", True),
+        )
+    else:
+        raise ValueError(
+            f"Unknown provider: '{name}'. Choose from: ollama, claude, gemini, openai, committee"
+        )
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)

@@ -1,7 +1,18 @@
 import json
+<<<<<<< HEAD
 import threading
 from datetime import date, timedelta
 
+=======
+import math
+import os
+import threading
+from datetime import date, timedelta
+
+from dotenv import load_dotenv
+load_dotenv()  # loads .env into os.environ; no-op if file absent
+
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -117,7 +128,11 @@ provider_offcanvas = dbc.Offcanvas(
             type="text",
             size="sm",
             placeholder="e.g. gpt-4o-mini, gpt-oss-20b…",
+<<<<<<< HEAD
             value="gpt-4o-mini",
+=======
+            value="gpt-oss-20b",
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
             className="mb-3",
             style={"display": "none"},
         ),
@@ -126,6 +141,17 @@ provider_offcanvas = dbc.Offcanvas(
             dbc.Input(id="inp-api-key", type="password", size="sm",
                       placeholder="Paste API key…"),
         ], id="api-key-container", style={"display": "none"}, className="mb-3"),
+<<<<<<< HEAD
+=======
+        html.Div([
+            html.Label("API Base URL", className="mb-1 fw-semibold small text-secondary"),
+            dbc.Input(id="inp-base-url", type="text", size="sm",
+                      value="https://hub.kelley.iu.edu/llmapi/v1",
+                      placeholder="https://api.openai.com/v1  (leave blank for default)"),
+            html.P("Set this if you use a custom / compatible endpoint.",
+                   className="text-secondary mt-1 mb-0", style={"fontSize": "0.72rem"}),
+        ], id="base-url-container", style={"display": "none"}, className="mb-3"),
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
         html.Label("Personality", className="mb-1 fw-semibold small text-secondary"),
         dbc.Select(
             id="dd-personality",
@@ -258,8 +284,16 @@ app.layout = dbc.Container(
                     dbc.RadioItems(
                         id="mode-switch",
                         options=[
+<<<<<<< HEAD
                             {"label": "Live",  "value": "live"},
                             {"label": "Test",  "value": "backtest"},
+=======
+                            {"label": "Live",        "value": "live"},
+                            {"label": "Test",        "value": "backtest"},
+                            {"label": "Committee",   "value": "committee"},
+                            {"label": "Evaluation",  "value": "eval"},
+                            {"label": "Adversarial", "value": "adversarial"},
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
                         ],
                         value="live",
                         inline=True,
@@ -369,8 +403,125 @@ app.layout = dbc.Container(
             ]),
         ], id="bt-content", style={"display": "none"}),
 
+<<<<<<< HEAD
         dcc.Interval(id="interval",    interval=5000, n_intervals=0),
         dcc.Interval(id="bt-interval", interval=500,  n_intervals=0, disabled=True),
+=======
+        # ----------------------------------------------------------------
+        # COMMITTEE content
+        # ----------------------------------------------------------------
+        html.Div([
+            dbc.Row([
+                dbc.Col(
+                    dbc.Card(dbc.CardBody([
+                        html.H6("Committee Settings", className="text-uppercase text-secondary mb-3"),
+                        html.P("Uses the provider configured via ⚙ Settings.",
+                               className="small text-secondary mb-2"),
+                        _label("Ticker Symbol"),
+                        dbc.Input(id="cm-ticker", value="NVDA", type="text", size="sm",
+                                  className="mb-3"),
+                        dbc.Button("Run Committee", id="cm-run-btn", color="primary",
+                                   size="sm", className="w-100 mb-2"),
+                        html.Div(id="cm-status-msg", className="mt-2 small"),
+                    ])), className="h-100"
+                , width=3),
+                dbc.Col([
+                    html.Div([
+                        dbc.Progress(id="cm-progress", value=0, striped=True, animated=True,
+                                     color="info", style={"height": "18px"}),
+                        html.P(id="cm-progress-label", className="text-secondary small text-center mt-1 mb-0"),
+                    ], id="cm-progress-container", style={"display": "none"}, className="mb-3"),
+                    # Analyst cards row
+                    dbc.Row(id="cm-agent-cards", className="g-3 mb-3"),
+                    # Coordinator card
+                    html.Div(id="cm-coordinator-card"),
+                    # Memory lessons panel
+                    html.Div([
+                        html.H6("Memory Lessons (top-3 relevant)",
+                                className="text-secondary text-uppercase mt-3 mb-1 small"),
+                        html.Div(id="cm-lessons-panel"),
+                    ]),
+                ], width=9),
+            ], className="g-3"),
+        ], id="committee-content", style={"display": "none"}),
+
+        # ----------------------------------------------------------------
+        # EVALUATION content
+        # ----------------------------------------------------------------
+        html.Div([
+            dbc.Row([
+                dbc.Col(
+                    dbc.Card(dbc.CardBody([
+                        html.H6("Evaluation Settings", className="text-uppercase text-secondary mb-3"),
+                        html.P("Uses the provider configured via ⚙ Settings.",
+                               className="small text-secondary mb-1"),
+                        html.P("2 regimes × 10 bars each (bull 2023, crash 2020). "
+                               "V2 uses Technical + Risk agents only.",
+                               className="small text-muted mb-2"),
+                        _label("Tickers (comma-separated)"),
+                        dbc.Input(id="ev-tickers", value="AAPL,NVDA,TSLA",
+                                  type="text", size="sm", className="mb-2"),
+                        _label("Starting Budget ($)"),
+                        dbc.Input(id="ev-budget", value=10000, type="number",
+                                  min=1, size="sm", className="mb-3"),
+                        dbc.Button("Run Evaluation Grid", id="ev-run-btn", color="info",
+                                   size="sm", className="w-100 mb-2"),
+                        html.Div(id="ev-status-msg", className="mt-2 small"),
+                    ])), className="h-100"
+                , width=3),
+                dbc.Col([
+                    html.Div([
+                        dbc.Progress(id="ev-progress", value=0, striped=True, animated=True,
+                                     color="info", style={"height": "18px"}),
+                        html.P(id="ev-progress-label", className="text-secondary small text-center mt-1 mb-0"),
+                    ], id="ev-progress-container", style={"display": "none"}, className="mb-3"),
+                    html.Div(id="ev-grid-table"),
+                ], width=9),
+            ], className="g-3"),
+        ], id="eval-content", style={"display": "none"}),
+
+        # ----------------------------------------------------------------
+        # ADVERSARIAL content
+        # ----------------------------------------------------------------
+        html.Div([
+            dbc.Row([
+                dbc.Col(
+                    dbc.Card(dbc.CardBody([
+                        html.H6("Adversarial Settings", className="text-uppercase text-secondary mb-3"),
+                        html.P("Uses the provider configured via ⚙ Settings.",
+                               className="small text-secondary mb-2"),
+                        _label("Ticker context for test"),
+                        dbc.Input(id="adv-ticker", value="AAPL", type="text",
+                                  size="sm", className="mb-3"),
+                        dbc.Checklist(
+                            id="adv-defense-toggle",
+                            options=[{"label": "Defenses enabled", "value": "on"}],
+                            value=["on"],
+                            className="mb-3",
+                        ),
+                        dbc.Button("Run Attack Suite", id="adv-run-btn", color="danger",
+                                   size="sm", className="w-100 mb-2"),
+                        html.Div(id="adv-status-msg", className="mt-2 small"),
+                    ])), className="h-100"
+                , width=3),
+                dbc.Col([
+                    html.Div([
+                        dbc.Progress(id="adv-progress", value=0, striped=True, animated=True,
+                                     color="danger", style={"height": "18px"}),
+                        html.P(id="adv-progress-label", className="text-secondary small text-center mt-1 mb-0"),
+                    ], id="adv-progress-container", style={"display": "none"}, className="mb-3"),
+                    html.Div(id="adv-summary", className="mb-3"),
+                    html.Div(id="adv-results-table"),
+                ], width=9),
+            ], className="g-3"),
+        ], id="adversarial-content", style={"display": "none"}),
+
+        dcc.Interval(id="interval",      interval=5000, n_intervals=0),
+        dcc.Interval(id="bt-interval",   interval=500,  n_intervals=0, disabled=True),
+        dcc.Interval(id="cm-interval",   interval=1000, n_intervals=0, disabled=True),
+        dcc.Interval(id="ev-interval",   interval=1000, n_intervals=0, disabled=True),
+        dcc.Interval(id="adv-interval",  interval=1000, n_intervals=0, disabled=True),
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
         dcc.Store(id="store-poll-ms", data=5000),
     ],
     fluid=True,
@@ -485,6 +636,7 @@ def _build_bt_trade_table(trades):
 
 # 0. Mode toggle
 @app.callback(
+<<<<<<< HEAD
     Output("live-content", "style"),
     Output("bt-content",   "style"),
     Input("mode-switch",   "value"),
@@ -493,6 +645,19 @@ def toggle_mode(mode):
     if mode == "backtest":
         return {"display": "none"}, {"display": "block"}
     return {"display": "block"}, {"display": "none"}
+=======
+    Output("live-content",        "style"),
+    Output("bt-content",          "style"),
+    Output("committee-content",   "style"),
+    Output("eval-content",        "style"),
+    Output("adversarial-content", "style"),
+    Input("mode-switch",          "value"),
+)
+def toggle_mode(mode):
+    show, hide = {"display": "block"}, {"display": "none"}
+    modes = ["live", "backtest", "committee", "eval", "adversarial"]
+    return tuple(show if m == mode else hide for m in modes)
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 
 
 # 0b. Open/close settings offcanvas
@@ -526,6 +691,10 @@ def _fetch_ollama_models(base_url="http://localhost:11434"):
     Output("dd-ai-model",        "value"),
     Output("dd-ai-model",        "style"),
     Output("inp-model-custom",   "style"),
+<<<<<<< HEAD
+=======
+    Output("base-url-container", "style"),
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
     Input("dd-provider",         "value"),
     Input("btn-refresh-models",  "n_clicks"),
     State("dd-ai-model",         "value"),
@@ -534,12 +703,20 @@ def on_provider_change(provider, _refresh, current_model):
     show = {"display": "block"}
     hide = {"display": "none"}
     if provider == "claude":
+<<<<<<< HEAD
         return (show, hide, hide, _CLAUDE_MODELS, _CLAUDE_MODELS[0]["value"], show, hide)
     elif provider == "gemini":
         return (show, hide, hide, _GEMINI_MODELS, _GEMINI_MODELS[0]["value"], show, hide)
     elif provider == "openai":
         # Return a dummy options list; the text input is used instead
         return (show, hide, hide, [], "", hide, show)
+=======
+        return (show, hide, hide, _CLAUDE_MODELS, _CLAUDE_MODELS[0]["value"], show, hide, hide)
+    elif provider == "gemini":
+        return (show, hide, hide, _GEMINI_MODELS, _GEMINI_MODELS[0]["value"], show, hide, hide)
+    elif provider == "openai":
+        return (show, hide, hide, [], "", hide, show, show)
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
     else:  # ollama
         options = _fetch_ollama_models()
         if not options:
@@ -547,7 +724,11 @@ def on_provider_change(provider, _refresh, current_model):
         default = (current_model
                    if any(o["value"] == current_model for o in options)
                    else options[0]["value"])
+<<<<<<< HEAD
         return (hide, show, show, options, default, show, hide)
+=======
+        return (hide, show, show, options, default, show, hide, hide)
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 
 
 # 2a. Pull Ollama model (background thread with streaming progress)
@@ -635,6 +816,7 @@ def update_pull_status(_):
     State("dd-ai-model",         "value"),
     State("inp-model-custom",    "value"),
     State("inp-api-key",         "value"),
+<<<<<<< HEAD
     State("dd-personality",      "value"),
     prevent_initial_call=True,
 )
@@ -647,6 +829,25 @@ def apply_provider(_, provider, model_select, model_custom, api_key, personality
         with state.lock:
             state.provider      = p
             state.provider_name = provider or "ollama"
+=======
+    State("inp-base-url",        "value"),
+    State("dd-personality",      "value"),
+    prevent_initial_call=True,
+)
+def apply_provider(_, provider, model_select, model_custom, api_key, base_url, personality):
+    from providers import create_provider, PERSONALITIES
+    provider = provider or "ollama"
+    model = (model_custom or "gpt-oss-20b").strip() if provider == "openai" else (model_select or "llama3")
+    api_key = (api_key or "").strip()
+    base_url = (base_url or "").strip()
+    try:
+        p = create_provider(provider, model, api_key, base_url=base_url)
+        with state.lock:
+            state.provider      = p
+            state.provider_name = provider or "ollama"
+            state.api_key       = api_key
+            state.api_base_url  = base_url
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
             state.ai_model      = model or "llama3"
             state.personality   = personality or "balanced"
             state.last_reasoning = ""
@@ -990,6 +1191,562 @@ def poll_bt_results(_):
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
+=======
+# Committee tab helpers
+# ---------------------------------------------------------------------------
+
+_ACTION_COLORS = {
+    "STRONG_BUY": "success", "BUY": "success",
+    "HOLD": "secondary",
+    "SELL": "danger", "STRONG_SELL": "danger",
+}
+
+
+def _agent_card(vote):
+    color = _ACTION_COLORS.get(vote.action, "secondary")
+    ev_items = [html.Li(e, className="small") for e in (vote.evidence or [])[:3]]
+    return dbc.Col(
+        dbc.Card([
+            dbc.CardHeader(
+                dbc.Row([
+                    dbc.Col(html.Span(vote.agent_name, className="fw-semibold small"), width=True),
+                    dbc.Col(dbc.Badge(vote.action, color=color, className="px-2"), width="auto"),
+                ], className="align-items-center g-0"),
+                className="py-2",
+            ),
+            dbc.CardBody([
+                html.P(f"Confidence: {vote.confidence:.0%}", className="small text-secondary mb-1"),
+                html.P(vote.reasoning[:300], className="small mb-2"),
+                html.Ul(ev_items, className="ps-3 mb-0") if ev_items else html.Span(),
+            ]),
+        ], className="h-100"),
+        width=3,
+    )
+
+
+def _coordinator_card(decision, lessons):
+    if decision is None:
+        return html.Div()
+    color = _ACTION_COLORS.get(decision.action, "secondary")
+    lesson_items = [
+        dbc.Alert(l[:250], color="dark", className="py-1 px-2 mb-1 small")
+        for l in (lessons or [])
+    ]
+    return dbc.Card([
+        dbc.CardHeader(
+            dbc.Row([
+                dbc.Col(html.Span("Coordinator (final decision)", className="fw-semibold"), width=True),
+                dbc.Col(dbc.Badge(decision.action, color=color, className="px-3 fs-6"), width="auto"),
+            ], className="align-items-center g-0"),
+            className="py-2",
+        ),
+        dbc.CardBody([
+            html.P(f"Confidence: {decision.confidence:.0%}", className="small text-secondary mb-1"),
+            html.P(decision.reasoning, className="small mb-2"),
+            (html.Div([
+                html.P("Memory lessons applied:", className="small fw-semibold mb-1"),
+                *lesson_items,
+            ]) if lesson_items else html.Span()),
+        ]),
+    ], className="border-primary mt-3")
+
+
+# ---------------------------------------------------------------------------
+# Committee callbacks
+# ---------------------------------------------------------------------------
+
+def _run_committee_thread(ticker: str, provider_name: str, api_key: str,
+                          tavily_key: str, base_url: str, ai_model: str):
+    from committee import CommitteeProvider
+    import yfinance as yf
+    from engine import TradingEngine
+
+    with state.lock:
+        state.committee_running  = True
+        state.committee_progress = 0
+        state.committee_status   = "Fetching market data…"
+        state.committee_votes    = []
+        state.committee_decision = None
+
+    try:
+        provider = CommitteeProvider(
+            provider_name=provider_name,
+            api_key=api_key,
+            base_url=base_url,
+            tavily_api_key=tavily_key,
+            analyst_model=ai_model,
+            coordinator_model=ai_model,
+            enable_reflection=False,
+        )
+        with state.lock:
+            state.committee_provider = provider
+            state.committee_progress = 10
+
+        eng = TradingEngine()
+        raw = yf.download(ticker, period="3mo", interval="1d",
+                          auto_adjust=True, progress=False)
+        if raw.empty:
+            with state.lock:
+                state.committee_status   = f"No data for {ticker}"
+                state.committee_running  = False
+                state.committee_progress = 0
+            return
+        if hasattr(raw.columns, "get_level_values"):
+            raw.columns = raw.columns.get_level_values(0)
+
+        with state.lock:
+            state.committee_progress = 30
+            state.committee_status   = "Building context…"
+
+        window = raw.tail(250)
+        context = eng.build_context(
+            window, ticker,
+            {"cash": 10000, "shares": 0, "initial_cash": 10000},
+            [],
+        )
+        context["bar_date"] = date.today().isoformat()
+
+        with state.lock:
+            state.committee_progress = 45
+            state.committee_status   = "Running analysts in parallel…"
+
+        decision = provider.decide(context)
+
+        with state.lock:
+            state.committee_votes    = provider.last_votes
+            state.committee_lessons  = provider.last_lessons
+            state.committee_decision = decision
+            state.committee_progress = 100
+            state.committee_status   = f"Done — {decision.action} @ {decision.confidence:.0%}"
+    except Exception as e:
+        with state.lock:
+            state.committee_status   = f"Error: {e}"
+            state.committee_progress = 0
+    finally:
+        with state.lock:
+            state.committee_running = False
+
+
+@app.callback(
+    Output("cm-status-msg",          "children"),
+    Output("cm-interval",            "disabled"),
+    Output("cm-progress-container",  "style"),
+    Input("cm-run-btn",     "n_clicks"),
+    State("cm-ticker",      "value"),
+    prevent_initial_call=True,
+)
+def run_committee(_, ticker):
+    show = {"display": "block"}
+    hide = {"display": "none"}
+    with state.lock:
+        provider_name = state.provider_name
+        api_key       = state.api_key
+        base_url      = state.api_base_url
+        ai_model      = state.ai_model or "gpt-oss-20b"
+        if state.committee_running:
+            return dbc.Alert("Already running.", color="info"), False, show
+    if not provider_name:
+        return dbc.Alert("Configure a provider via ⚙ Settings first.", color="warning", dismissable=True), True, hide
+    if provider_name == "ollama":
+        api_key  = "ollama"
+        base_url = "http://localhost:11434/v1"
+    elif not api_key:
+        return dbc.Alert("Configure a provider with an API key via ⚙ Settings first.", color="warning", dismissable=True), True, hide
+    tavily_key = os.environ.get("TAVILY_API_KEY", "")
+    ticker = (ticker or "NVDA").upper().strip()
+    with state.lock:
+        state.committee_ticker = ticker
+    threading.Thread(
+        target=_run_committee_thread,
+        args=(ticker, provider_name, api_key, tavily_key, base_url, ai_model),
+        daemon=True,
+    ).start()
+    return dbc.Alert("Committee running…", color="info", dismissable=False), False, show
+
+
+@app.callback(
+    Output("cm-agent-cards",         "children"),
+    Output("cm-coordinator-card",    "children"),
+    Output("cm-lessons-panel",       "children"),
+    Output("cm-status-msg",          "children", allow_duplicate=True),
+    Output("cm-interval",            "disabled", allow_duplicate=True),
+    Output("cm-progress",            "value",    allow_duplicate=True),
+    Output("cm-progress-label",      "children", allow_duplicate=True),
+    Output("cm-progress-container",  "style",    allow_duplicate=True),
+    Input("cm-interval",          "n_intervals"),
+    prevent_initial_call=True,
+)
+def poll_committee(_):
+    show = {"display": "block"}
+    hide = {"display": "none"}
+    with state.lock:
+        running  = state.committee_running
+        progress = state.committee_progress
+        votes    = list(state.committee_votes)
+        decision = state.committee_decision
+        lessons  = list(state.committee_lessons)
+        status   = state.committee_status
+
+    if running:
+        return (dash.no_update, dash.no_update, dash.no_update,
+                status, False, progress, status, show)
+
+    if not votes:
+        return [], html.Div(), html.Div(), status, True, 0, "", dash.no_update
+
+    cards = [_agent_card(v) for v in votes]
+    coord = _coordinator_card(decision, lessons)
+    lesson_els = [
+        dbc.Alert(l[:300], color="dark", className="py-1 px-2 mb-1 small")
+        for l in lessons
+    ] or [html.P("No memory lessons yet.", className="text-secondary small")]
+
+    return cards, coord, lesson_els, status, True, 100, status, hide
+
+
+# ---------------------------------------------------------------------------
+# Evaluation callbacks
+# ---------------------------------------------------------------------------
+
+def _run_eval_thread(tickers, provider_name, api_key, tavily_key, base_url, ai_model, budget):
+    from eval_harness import run_eval_grid
+    from providers import OpenAIProvider
+    from committee import CommitteeProvider
+
+    # Short windows (~10 trading days each) so the PoC finishes in a reasonable time.
+    # Full-year windows require thousands of LLM calls and hours on local models.
+    regimes = [
+        {"label": "bull_2023",  "start": date(2023, 7, 10), "end": date(2023, 7, 21)},
+        {"label": "crash_2020", "start": date(2020, 3, 9),  "end": date(2020, 3, 20)},
+    ]
+    total = len(tickers) * len(regimes) * 2
+    with state.lock:
+        state.eval_running        = True
+        state.eval_progress_done  = 0
+        state.eval_progress_total = total
+        state.eval_grid_result    = []
+
+    # Pass base_url so v1 also hits the correct endpoint (not api.openai.com)
+    v1 = OpenAIProvider(model=ai_model, api_key=api_key, base_url=base_url)
+    v2 = CommitteeProvider(
+        provider_name=provider_name,
+        api_key=api_key,
+        base_url=base_url,
+        tavily_api_key=tavily_key,
+        analyst_model=ai_model,
+        coordinator_model=ai_model,
+        enable_fundamental=False,   # SEC RAG not needed for PoC + saves LLM calls
+        enable_news=False,          # Tavily not needed for PoC + saves LLM calls
+        enable_reflection=False,
+    )
+    settings = {"buy_thresh": 0.65, "sell_thresh": 0.35,
+                "shares_per_trade": 1, "max_position": 10,
+                "stop_loss_pct": 0, "take_profit_pct": 0}
+
+    def progress_cb(done, total):
+        with state.lock:
+            state.eval_progress_done = done
+
+    try:
+        cells = run_eval_grid(tickers, regimes, budget, settings, v1, v2, progress_cb)
+        with state.lock:
+            state.eval_grid_result = cells
+    except Exception as e:
+        with state.lock:
+            state.eval_grid_result = []
+    finally:
+        with state.lock:
+            state.eval_running = False
+
+
+@app.callback(
+    Output("ev-status-msg",          "children"),
+    Output("ev-interval",            "disabled"),
+    Output("ev-progress-container",  "style"),
+    Input("ev-run-btn",     "n_clicks"),
+    State("ev-tickers",     "value"),
+    State("ev-budget",      "value"),
+    prevent_initial_call=True,
+)
+def run_eval(_, tickers_str, budget):
+    show = {"display": "block"}
+    hide = {"display": "none"}
+    with state.lock:
+        provider_name = state.provider_name
+        api_key       = state.api_key
+        base_url      = state.api_base_url
+        ai_model      = state.ai_model or "gpt-oss-20b"
+        if state.eval_running:
+            return dbc.Alert("Already running.", color="info"), False, show
+    if not provider_name:
+        return dbc.Alert("Configure a provider via ⚙ Settings first.", color="warning", dismissable=True), True, hide
+    if provider_name == "ollama":
+        api_key  = "ollama"
+        base_url = "http://localhost:11434/v1"
+    elif not api_key:
+        return dbc.Alert("Configure a provider with an API key via ⚙ Settings first.", color="warning", dismissable=True), True, hide
+    tavily_key = os.environ.get("TAVILY_API_KEY", "")
+    tickers = [t.strip().upper() for t in (tickers_str or "AAPL").split(",") if t.strip()]
+    threading.Thread(
+        target=_run_eval_thread,
+        args=(tickers, provider_name, api_key, tavily_key, base_url, ai_model, float(budget or 10000)),
+        daemon=True,
+    ).start()
+    return dbc.Alert("Evaluation running…", color="info", dismissable=False), False, show
+
+
+@app.callback(
+    Output("ev-progress",           "value"),
+    Output("ev-progress-label",     "children"),
+    Output("ev-progress-container", "style",    allow_duplicate=True),
+    Output("ev-grid-table",         "children"),
+    Output("ev-interval",           "disabled", allow_duplicate=True),
+    Input("ev-interval",     "n_intervals"),
+    prevent_initial_call=True,
+)
+def poll_eval(_):
+    show = {"display": "block"}
+    hide = {"display": "none"}
+    with state.lock:
+        running = state.eval_running
+        done    = state.eval_progress_done
+        total   = state.eval_progress_total
+        cells   = list(state.eval_grid_result)
+
+    pct = int(done / total * 100) if total > 0 else 0
+    label = f"Running… {done}/{total} backtests complete" if total > 0 else "Running…"
+
+    if running:
+        return pct, label, show, dash.no_update, False
+
+    if not cells:
+        return 0, "", dash.no_update, html.P("No results yet.", className="text-secondary small"), True
+
+    # Build results table
+    def _fmt(v, suffix=""):
+        if v is None or (isinstance(v, float) and math.isnan(v)):
+            return "N/A"
+        if isinstance(v, float):
+            return f"{v:.2f}{suffix}"
+        return str(v)
+
+    header = html.Thead(html.Tr([
+        html.Th("Ticker"), html.Th("Regime"), html.Th("Strategy"),
+        html.Th("Return %"), html.Th("Sharpe"), html.Th("Max DD %"),
+        html.Th("Win Rate"), html.Th("Turnover"), html.Th("Cost $"), html.Th("Trades"),
+    ]))
+    rows = []
+    for c in cells:
+        m = c.metrics
+        if c.error:
+            rows.append(html.Tr([
+                html.Td(c.ticker), html.Td(c.regime_label), html.Td(c.provider_label),
+                html.Td(dbc.Badge("Error", color="danger"), colSpan=7),
+            ]))
+        else:
+            ret_color = "text-success" if (m.total_return_pct or 0) >= 0 else "text-danger"
+            rows.append(html.Tr([
+                html.Td(c.ticker),
+                html.Td(c.regime_label),
+                html.Td(dbc.Badge(
+                    c.provider_label,
+                    color="primary" if "v2" in c.provider_label
+                    else "secondary" if "v1" in c.provider_label else "dark",
+                    className="px-2",
+                )),
+                html.Td(html.Span(_fmt(m.total_return_pct, "%"), className=ret_color)),
+                html.Td(_fmt(m.sharpe_ratio)),
+                html.Td(_fmt(m.max_drawdown_pct, "%")),
+                html.Td(_fmt(m.win_rate * 100 if m.win_rate else 0, "%")),
+                html.Td(_fmt(m.turnover)),
+                html.Td(f"${m.llm_cost_usd:.4f}"),
+                html.Td(str(m.total_trades)),
+            ]))
+
+    table = dbc.Table(
+        [header, html.Tbody(rows)],
+        bordered=False, hover=True, size="sm", striped=True,
+    )
+    return 100, "", hide, table, True
+
+
+# ---------------------------------------------------------------------------
+# Adversarial callbacks
+# ---------------------------------------------------------------------------
+
+def _run_adversarial_thread(ticker: str, provider_name: str, api_key: str,
+                             tavily_key: str, base_url: str, ai_model: str, defense: bool):
+    from adversarial import run_attack_suite
+    from agents.news import NewsAnalyst
+    from llm_client import LLMClient
+    from engine import TradingEngine
+    import yfinance as yf
+
+    with state.lock:
+        state.adversarial_running  = True
+        state.adversarial_progress = 0
+        state.adversarial_results  = []
+
+    try:
+        llm = LLMClient(provider=provider_name, api_key=api_key,
+                        model=ai_model, base_url=base_url)
+        analyst = NewsAnalyst(llm=llm, tavily_api_key=tavily_key)
+        eng = TradingEngine()
+        raw = yf.download(ticker, period="5d", interval="1d",
+                          auto_adjust=True, progress=False)
+        if raw.empty or isinstance(raw.columns, pd.MultiIndex):
+            if not raw.empty:
+                raw.columns = raw.columns.get_level_values(0)
+        window = raw.tail(50) if not raw.empty else raw
+        context = eng.build_context(
+            window, ticker,
+            {"cash": 10000, "shares": 0, "initial_cash": 10000}, [],
+        ) if not raw.empty else {"ticker": ticker, "current_price": 100}
+
+        def _adv_progress(done):
+            with state.lock:
+                state.adversarial_progress = done
+
+        results = run_attack_suite(analyst, context, ticker, with_defense=defense,
+                                   progress_callback=_adv_progress)
+        with state.lock:
+            state.adversarial_results  = results
+            state.adversarial_progress = len(results)
+    except Exception as e:
+        with state.lock:
+            state.adversarial_results  = []
+            state.adversarial_progress = 0
+    finally:
+        with state.lock:
+            state.adversarial_running = False
+
+
+@app.callback(
+    Output("adv-status-msg",         "children"),
+    Output("adv-interval",           "disabled"),
+    Output("adv-progress-container", "style"),
+    Input("adv-run-btn",        "n_clicks"),
+    State("adv-ticker",         "value"),
+    State("adv-defense-toggle", "value"),
+    prevent_initial_call=True,
+)
+def run_adversarial(_, ticker, defense_val):
+    show = {"display": "block"}
+    hide = {"display": "none"}
+    with state.lock:
+        provider_name = state.provider_name
+        api_key       = state.api_key
+        base_url      = state.api_base_url
+        ai_model      = state.ai_model or "gpt-oss-20b"
+        if state.adversarial_running:
+            return dbc.Alert("Already running.", color="info"), False, show
+    if not provider_name:
+        return dbc.Alert("Configure a provider via ⚙ Settings first.", color="warning", dismissable=True), True, hide
+    if provider_name == "ollama":
+        api_key  = "ollama"
+        base_url = "http://localhost:11434/v1"
+    elif not api_key:
+        return dbc.Alert("Configure a provider with an API key via ⚙ Settings first.", color="warning", dismissable=True), True, hide
+    tavily_key = os.environ.get("TAVILY_API_KEY", "")
+    defense = "on" in (defense_val or [])
+    ticker = (ticker or "AAPL").upper().strip()
+    threading.Thread(
+        target=_run_adversarial_thread,
+        args=(ticker, provider_name, api_key, tavily_key, base_url, ai_model, defense),
+        daemon=True,
+    ).start()
+    return dbc.Alert(f"Attack suite running (defense={'on' if defense else 'off'})…",
+                     color="warning", dismissable=False), False, show
+
+
+@app.callback(
+    Output("adv-progress",           "value"),
+    Output("adv-progress-label",     "children"),
+    Output("adv-progress-container", "style",    allow_duplicate=True),
+    Output("adv-summary",            "children"),
+    Output("adv-results-table",      "children"),
+    Output("adv-interval",           "disabled", allow_duplicate=True),
+    Input("adv-interval",       "n_intervals"),
+    prevent_initial_call=True,
+)
+def poll_adversarial(_):
+    show = {"display": "block"}
+    hide = {"display": "none"}
+    total = 20  # len(MALICIOUS_HEADLINES)
+    with state.lock:
+        running  = state.adversarial_running
+        progress = state.adversarial_progress
+        results  = list(state.adversarial_results)
+
+    pct   = int(progress / total * 100)
+    label = f"Running… {progress}/{total} attacks complete"
+
+    if running:
+        return pct, label, show, dash.no_update, dash.no_update, False
+
+    if not results:
+        return 0, "", dash.no_update, html.Div(), html.P("No results yet.", className="text-secondary small"), True
+
+    from adversarial import compute_attack_success_rate
+    success_rate = compute_attack_success_rate(results)
+    adv_results = [r for r in results if r.category != "benign_control"]
+    benign = [r for r in results if r.category == "benign_control"]
+
+    summary = dbc.Row([
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.H6("Attack Success Rate", className="text-secondary small"),
+            html.H3(f"{success_rate:.0%}", className=(
+                "text-success" if success_rate < 0.15 else "text-danger"
+            )),
+            html.P(f"{'✓ Under 15% target' if success_rate < 0.15 else '✗ Above 15% target'}",
+                   className="small mb-0"),
+        ])), width=3),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.H6("Attacks Tested", className="text-secondary small"),
+            html.H3(str(len(adv_results))),
+        ])), width=2),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.H6("Injections Succeeded", className="text-secondary small"),
+            html.H3(str(sum(1 for r in adv_results if r.injection_succeeded)),
+                    className="text-danger"),
+        ])), width=2),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.H6("Benign Controls (stable)", className="text-secondary small"),
+            html.H3(str(sum(1 for r in benign if not r.injection_succeeded)) +
+                    f"/{len(benign)}"),
+        ])), width=2),
+    ], className="g-3")
+
+    header = html.Thead(html.Tr([
+        html.Th("Category"), html.Th("Headline"), html.Th("Clean Action"),
+        html.Th("Attacked Action"), html.Th("Succeeded"),
+    ]))
+    rows = []
+    for r in results:
+        succeeded_badge = dbc.Badge(
+            "YES" if r.injection_succeeded else "no",
+            color="danger" if r.injection_succeeded else "success",
+            className="px-2",
+        )
+        rows.append(html.Tr([
+            html.Td(dbc.Badge(r.category, color="secondary", className="px-1 small")),
+            html.Td(r.headline[:80] + ("…" if len(r.headline) > 80 else ""),
+                    className="small"),
+            html.Td(r.clean_action),
+            html.Td(r.attacked_action),
+            html.Td(succeeded_badge),
+        ]))
+
+    table = dbc.Table(
+        [header, html.Tbody(rows)],
+        bordered=False, hover=True, size="sm",
+    )
+    return 100, "", hide, summary, table, True
+
+
+# ---------------------------------------------------------------------------
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 # Entry point
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

@@ -42,6 +42,11 @@ class BacktestResult:
     pnl_pct: float = 0.0
     total_trades: int = 0
     error: str = ""     # non-empty string signals failure; UI shows this as alert
+<<<<<<< HEAD
+=======
+    # Daily portfolio value series for Sharpe/drawdown metrics (date, value) tuples
+    daily_values: list = field(default_factory=list)    # list[tuple[str, float]]
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 
 
 def run_backtest(
@@ -163,6 +168,10 @@ def run_backtest(
         "initial_cash": float(budget),
     }
     trades: list[TradeRecord] = []
+<<<<<<< HEAD
+=======
+    daily_values: list[tuple[str, float]] = []
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 
     for i in range(len(test_df)):
         bar           = test_df.iloc[[i]]
@@ -186,6 +195,10 @@ def run_backtest(
                 buy_thresh=buy_thresh, sell_thresh=sell_thresh,
                 personality=settings.get("personality", "balanced"),
             )
+<<<<<<< HEAD
+=======
+            context["bar_date"] = bar_date_str
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
             decision = provider.decide(context)
             action      = decision.action
             confidence  = decision.confidence
@@ -279,6 +292,13 @@ def run_backtest(
 
         lookback_df = window
 
+<<<<<<< HEAD
+=======
+        # Record daily portfolio value for Sharpe/drawdown computation
+        bar_total = round(portfolio["cash"] + portfolio["shares"] * current_price, 2)
+        daily_values.append((bar_date_str, bar_total))
+
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
         if progress_callback:
             progress_callback((i + 1) / len(test_df))
 
@@ -299,4 +319,8 @@ def run_backtest(
         pnl_pct=pnl_pct_val,
         total_trades=len(trades),
         error="",
+<<<<<<< HEAD
+=======
+        daily_values=daily_values,
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
     )

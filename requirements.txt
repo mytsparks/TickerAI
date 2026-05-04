@@ -8,3 +8,8 @@ requests
 anthropic>=0.25.0
 google-genai
 openai>=1.0.0
+<<<<<<< HEAD
+=======
+tavily-python>=0.3.0
+python-dotenv>=1.0.0
+>>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
