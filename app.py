@@ -12,7 +12,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.graph_objects as go
 import yfinance as yf
-from dash import Input, Output, State, dcc, html
+from dash import Input, Output, State, MATCH, dcc, html
 
 from backtest import BacktestResult, run_backtest
 from simulation import run_simulation
@@ -1137,7 +1137,10 @@ _ACTION_COLORS = {
 }
 
 
-def _agent_card(vote):
+_REASONING_COLLAPSED_H = "7.5em"  # ~5 lines; identical for all 4 cards
+
+
+def _agent_card(vote, idx):
     color = _ACTION_COLORS.get(vote.action, "secondary")
     return dbc.Col(
         dbc.Card([
@@ -1148,10 +1151,25 @@ def _agent_card(vote):
                 ], className="align-items-center g-0"),
                 className="py-2",
             ),
-            dbc.CardBody(
-                html.P(vote.reasoning, className="small mb-0",
-                       style={"whiteSpace": "pre-wrap"}),
-            ),
+            dbc.CardBody([
+                html.Div(
+                    vote.reasoning,
+                    id={"type": "agent-reasoning", "index": idx},
+                    className="small mb-1",
+                    style={
+                        "whiteSpace": "pre-wrap",
+                        "overflow": "hidden",
+                        "maxHeight": _REASONING_COLLAPSED_H,
+                    },
+                ),
+                html.Button(
+                    "Read more…",
+                    id={"type": "agent-toggle", "index": idx},
+                    n_clicks=0,
+                    className="btn btn-link btn-sm p-0 text-muted",
+                    style={"fontSize": "0.75rem", "textDecoration": "none"},
+                ),
+            ]),
         ], className="h-100"),
         width=3,
     )
@@ -1182,6 +1200,30 @@ def _coordinator_card(decision, lessons):
             ]) if lesson_items else html.Span()),
         ]),
     ], className="border-primary mt-3")
+
+
+# Toggle expand/collapse for individual analyst reasoning blocks.
+# Pattern-matching MATCH means one callback instance handles all 4 cards.
+app.clientside_callback(
+    """
+    function(n_clicks, style) {
+        if (!n_clicks) return window.dash_clientside.no_update;
+        var collapsed = style.maxHeight !== "none";
+        if (collapsed) {
+            return [{whiteSpace:"pre-wrap", overflow:"hidden", maxHeight:"none", marginBottom:"0.25rem"}, "Read less"];
+        } else {
+            return [{whiteSpace:"pre-wrap", overflow:"hidden", maxHeight:"%s", marginBottom:"0.25rem"}, "Read more…"];
+        }
+    }
+    """ % _REASONING_COLLAPSED_H,
+    [
+        Output({"type": "agent-reasoning", "index": MATCH}, "style"),
+        Output({"type": "agent-toggle", "index": MATCH}, "children"),
+    ],
+    Input({"type": "agent-toggle", "index": MATCH}, "n_clicks"),
+    State({"type": "agent-reasoning", "index": MATCH}, "style"),
+    prevent_initial_call=True,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -1327,7 +1369,7 @@ def poll_committee(_):
     if not votes:
         return [], html.Div(), html.Div(), status, True, 0, "", dash.no_update
 
-    cards = [_agent_card(v) for v in votes]
+    cards = [_agent_card(v, i) for i, v in enumerate(votes)]
     coord = _coordinator_card(decision, lessons)
     lesson_els = [
         dbc.Alert(l[:300], color="dark", className="py-1 px-2 mb-1 small")
