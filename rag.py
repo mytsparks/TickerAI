@@ -157,11 +157,21 @@ class RAGStore:
             resp = requests.get(url, headers=_HEADERS, timeout=30)
             resp.raise_for_status()
             raw = resp.text
-            # Strip HTML tags if present
-            if "<html" in raw.lower() or "<HTML" in raw:
-                raw = re.sub(r"<[^>]+>", " ", raw)
-                raw = re.sub(r"&[a-z]+;", " ", raw)
-            # Collapse whitespace
+            if "<html" in raw.lower():
+                raw = re.sub(r"<[^>]+>", " ", raw)           # strip all HTML/XBRL tags
+                raw = re.sub(r"&[a-zA-Z0-9#]+;", " ", raw)   # HTML entities
+            # Strip XBRL namespace tokens (e.g. us-gaap:Revenues, ix:nonNumeric)
+            raw = re.sub(r"\b[a-zA-Z][\w]*:[A-Za-z][\w]*\b", " ", raw)
+            # Strip leftover XML/XBRL attribute fragments
+            raw = re.sub(r'\b\w+="[^"]*"', " ", raw)
+            # Keep only lines with enough real words (filters tag-soup chunks)
+            lines = []
+            for line in raw.splitlines():
+                line = line.strip()
+                words = [w for w in line.split() if re.search(r"[a-zA-Z]{3,}", w)]
+                if len(words) >= 4:
+                    lines.append(line)
+            raw = " ".join(lines)
             raw = re.sub(r"\s+", " ", raw).strip()
             return raw[:500_000]
         except Exception:
@@ -193,7 +203,17 @@ class RAGStore:
                     current = para
         if current:
             chunks.append(current)
-        return chunks
+        # Drop chunks that are mostly non-alphabetic (XBRL tag noise)
+        return [c for c in chunks if self._text_quality(c) >= 0.4]
+
+    @staticmethod
+    def _text_quality(text: str) -> float:
+        """Ratio of alphabetic characters to total non-space characters."""
+        non_space = [c for c in text if not c.isspace()]
+        if not non_space:
+            return 0.0
+        alpha = sum(1 for c in non_space if c.isalpha())
+        return alpha / len(non_space)
 
     def _embed_batch(self, texts: list[str]) -> list[list[float]]:
         results: list[list[float]] = []

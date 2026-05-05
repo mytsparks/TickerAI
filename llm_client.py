@@ -111,3 +111,45 @@ class LLMClient:
             return resp.text, {}
 
         return "{}", {}
+
+    def chat_prose(
+        self,
+        messages: list[dict],
+        max_tokens: int = 400,
+        temperature: float = 0.2,
+    ) -> tuple[str, dict]:
+        """
+        Request a prose response in a provider-agnostic way.  Returns the
+        reasoning/analysis text and usage dict.
+
+        OpenAI: injects a JSON schema into the system message and uses
+                json_mode=True — returns data["reasoning"] from the parsed JSON.
+        Ollama:  plain text with json_mode=False.
+        Claude/Gemini: plain text directly.
+        """
+        if self.provider == "openai":
+            import json as _json
+            _JSON_NOTE = (
+                "\n\nIMPORTANT: Respond ONLY with valid JSON in exactly this format:\n"
+                '{"action": "BUY|SELL|HOLD|STRONG_BUY|STRONG_SELL", '
+                '"confidence": 0.0-1.0, '
+                '"reasoning": "your complete 2-3 sentence analysis"}'
+            )
+            mod = [
+                {**m, "content": m["content"] + _JSON_NOTE} if m["role"] == "system" else m
+                for m in messages
+            ]
+            text, usage = self.chat(mod, max_tokens=max_tokens, temperature=temperature, json_mode=True)
+            try:
+                data = _json.loads(text)
+                return str(data.get("reasoning", text)), usage
+            except Exception:
+                return text, usage
+
+        elif self.provider == "ollama":
+            return self.chat(messages, max_tokens=max_tokens,
+                             temperature=temperature, json_mode=False)
+
+        else:  # claude, gemini
+            return self.chat(messages, max_tokens=max_tokens,
+                             temperature=temperature, json_mode=False)

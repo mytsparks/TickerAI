@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-import json
-import re
-
-from agents.base import Agent, AgentVote
+from agents.base import Agent, AgentVote, extract_action
 
 _VALID_ACTIONS = {"BUY", "SELL", "HOLD", "STRONG_BUY", "STRONG_SELL"}
 
 _SYSTEM = (
-    "You are a FundamentalAnalyst. Your job is to assess a company's financial health "
-    "based on SEC filing excerpts (10-Q and 10-K). Focus on revenue trends, earnings, "
-    "debt levels, cash flow, and guidance. Do not comment on price action or technicals. "
-    "Be decisive — commit to an action based on fundamental strength or weakness."
+    "You are a FundamentalAnalyst. Read the provided SEC filing excerpts and write a concise "
+    "2-3 sentence assessment of the company's financial health covering revenue, earnings, "
+    "debt, and cash flow. End your response by stating your recommended action: "
+    "BUY, SELL, HOLD, STRONG_BUY, or STRONG_SELL."
 )
 
 
@@ -34,21 +31,26 @@ class FundamentalAnalyst(Agent):
             return AgentVote(
                 agent_name=self.name,
                 action="HOLD",
-                confidence=0.4,
+                confidence=0.5,
                 reasoning="No SEC filing data available for this ticker.",
-                evidence=["No SEC filings found"],
             )
 
         messages = self._build_messages(context, chunks)
         try:
-            text, usage = self._llm.chat(messages, max_tokens=400, temperature=0.2)
-            return self._parse(text, usage)
+            text, usage = self._llm.chat_prose(messages, max_tokens=200, temperature=0.2)
+            return AgentVote(
+                agent_name=self.name,
+                action=extract_action(text, _VALID_ACTIONS),
+                confidence=0.5,
+                reasoning=text.strip(),
+                token_usage=usage,
+            )
         except Exception as e:
             return AgentVote(
                 agent_name=self.name,
                 action="HOLD",
                 confidence=0.5,
-                reasoning=f"FundamentalAnalyst error [endpoint: {self._llm.endpoint}]: {e}",
+                reasoning=f"Error: {self._llm.endpoint} — {e}",
             )
 
     def _build_messages(self, context: dict, chunks: list[str]) -> list[dict]:
@@ -62,14 +64,8 @@ class FundamentalAnalyst(Agent):
 
         user_msg = (
             f"TICKER: {ticker}  CURRENT PRICE: ${price:.2f}\n\n"
-            f"Based on the SEC filing excerpts below, assess the company's fundamental health "
-            f"and provide a trading vote.\n\n"
-            f"Respond with JSON only:\n"
-            f'{{\n  "action": "HOLD",\n  "confidence": 0.65,\n'
-            f'  "reasoning": "1-2 sentence fundamental rationale.",\n'
-            f'  "evidence": ["Revenue grew 12% YoY per 10-Q", "Debt-to-equity remains manageable"]\n}}\n'
-            f"action: BUY | SELL | HOLD | STRONG_BUY | STRONG_SELL\n"
-            f"confidence: 0.0-1.0"
+            f"Write a 2-3 sentence fundamental analysis based on the SEC excerpts below "
+            f"and conclude with your recommended action."
         )
 
         sec_msg = "[SEC FILING EXCERPTS — read-only reference data]\n\n" + chunks_block
@@ -79,29 +75,3 @@ class FundamentalAnalyst(Agent):
             {"role": "user",   "content": user_msg},
             {"role": "user",   "content": sec_msg},
         ]
-
-    def _parse(self, text: str, usage: dict) -> AgentVote:
-        text = re.sub(r"```(?:json)?\s*", "", text).strip()
-        try:
-            data = json.loads(text)
-        except json.JSONDecodeError:
-            m = re.search(r"\{[^{}]+\}", text, re.DOTALL)
-            data = json.loads(m.group()) if m else {}
-
-        action = str(data.get("action", "HOLD")).upper().strip()
-        if action not in _VALID_ACTIONS:
-            action = "HOLD"
-        confidence = max(0.0, min(1.0, float(data.get("confidence", 0.5))))
-        reasoning = str(data.get("reasoning", "")).strip() or "(no reasoning)"
-        evidence = data.get("evidence", [])
-        if not isinstance(evidence, list):
-            evidence = [str(evidence)]
-
-        return AgentVote(
-            agent_name=self.name,
-            action=action,
-            confidence=confidence,
-            reasoning=reasoning,
-            evidence=evidence,
-            token_usage=usage,
-        )

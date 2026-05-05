@@ -1,9 +1,4 @@
 import json
-<<<<<<< HEAD
-import threading
-from datetime import date, timedelta
-
-=======
 import math
 import os
 import threading
@@ -12,7 +7,6 @@ from datetime import date, timedelta
 from dotenv import load_dotenv
 load_dotenv()  # loads .env into os.environ; no-op if file absent
 
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -128,11 +122,7 @@ provider_offcanvas = dbc.Offcanvas(
             type="text",
             size="sm",
             placeholder="e.g. gpt-4o-mini, gpt-oss-20b…",
-<<<<<<< HEAD
-            value="gpt-4o-mini",
-=======
             value="gpt-oss-20b",
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
             className="mb-3",
             style={"display": "none"},
         ),
@@ -141,8 +131,6 @@ provider_offcanvas = dbc.Offcanvas(
             dbc.Input(id="inp-api-key", type="password", size="sm",
                       placeholder="Paste API key…"),
         ], id="api-key-container", style={"display": "none"}, className="mb-3"),
-<<<<<<< HEAD
-=======
         html.Div([
             html.Label("API Base URL", className="mb-1 fw-semibold small text-secondary"),
             dbc.Input(id="inp-base-url", type="text", size="sm",
@@ -151,7 +139,6 @@ provider_offcanvas = dbc.Offcanvas(
             html.P("Set this if you use a custom / compatible endpoint.",
                    className="text-secondary mt-1 mb-0", style={"fontSize": "0.72rem"}),
         ], id="base-url-container", style={"display": "none"}, className="mb-3"),
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
         html.Label("Personality", className="mb-1 fw-semibold small text-secondary"),
         dbc.Select(
             id="dd-personality",
@@ -284,16 +271,11 @@ app.layout = dbc.Container(
                     dbc.RadioItems(
                         id="mode-switch",
                         options=[
-<<<<<<< HEAD
-                            {"label": "Live",  "value": "live"},
-                            {"label": "Test",  "value": "backtest"},
-=======
                             {"label": "Live",        "value": "live"},
                             {"label": "Test",        "value": "backtest"},
                             {"label": "Committee",   "value": "committee"},
                             {"label": "Evaluation",  "value": "eval"},
                             {"label": "Adversarial", "value": "adversarial"},
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
                         ],
                         value="live",
                         inline=True,
@@ -403,10 +385,6 @@ app.layout = dbc.Container(
             ]),
         ], id="bt-content", style={"display": "none"}),
 
-<<<<<<< HEAD
-        dcc.Interval(id="interval",    interval=5000, n_intervals=0),
-        dcc.Interval(id="bt-interval", interval=500,  n_intervals=0, disabled=True),
-=======
         # ----------------------------------------------------------------
         # COMMITTEE content
         # ----------------------------------------------------------------
@@ -521,7 +499,6 @@ app.layout = dbc.Container(
         dcc.Interval(id="cm-interval",   interval=1000, n_intervals=0, disabled=True),
         dcc.Interval(id="ev-interval",   interval=1000, n_intervals=0, disabled=True),
         dcc.Interval(id="adv-interval",  interval=1000, n_intervals=0, disabled=True),
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
         dcc.Store(id="store-poll-ms", data=5000),
     ],
     fluid=True,
@@ -636,28 +613,18 @@ def _build_bt_trade_table(trades):
 
 # 0. Mode toggle
 @app.callback(
-<<<<<<< HEAD
-    Output("live-content", "style"),
-    Output("bt-content",   "style"),
-    Input("mode-switch",   "value"),
+    Output("live-content",         "style"),
+    Output("bt-content",           "style"),
+    Output("committee-content",    "style"),
+    Output("eval-content",         "style"),
+    Output("adversarial-content",  "style"),
+    Input("mode-switch",           "value"),
 )
 def toggle_mode(mode):
-    if mode == "backtest":
-        return {"display": "none"}, {"display": "block"}
-    return {"display": "block"}, {"display": "none"}
-=======
-    Output("live-content",        "style"),
-    Output("bt-content",          "style"),
-    Output("committee-content",   "style"),
-    Output("eval-content",        "style"),
-    Output("adversarial-content", "style"),
-    Input("mode-switch",          "value"),
-)
-def toggle_mode(mode):
-    show, hide = {"display": "block"}, {"display": "none"}
+    show = {"display": "block"}
+    hide = {"display": "none"}
     modes = ["live", "backtest", "committee", "eval", "adversarial"]
     return tuple(show if m == mode else hide for m in modes)
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 
 
 # 0b. Open/close settings offcanvas
@@ -691,10 +658,7 @@ def _fetch_ollama_models(base_url="http://localhost:11434"):
     Output("dd-ai-model",        "value"),
     Output("dd-ai-model",        "style"),
     Output("inp-model-custom",   "style"),
-<<<<<<< HEAD
-=======
     Output("base-url-container", "style"),
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
     Input("dd-provider",         "value"),
     Input("btn-refresh-models",  "n_clicks"),
     State("dd-ai-model",         "value"),
@@ -703,20 +667,11 @@ def on_provider_change(provider, _refresh, current_model):
     show = {"display": "block"}
     hide = {"display": "none"}
     if provider == "claude":
-<<<<<<< HEAD
-        return (show, hide, hide, _CLAUDE_MODELS, _CLAUDE_MODELS[0]["value"], show, hide)
-    elif provider == "gemini":
-        return (show, hide, hide, _GEMINI_MODELS, _GEMINI_MODELS[0]["value"], show, hide)
-    elif provider == "openai":
-        # Return a dummy options list; the text input is used instead
-        return (show, hide, hide, [], "", hide, show)
-=======
         return (show, hide, hide, _CLAUDE_MODELS, _CLAUDE_MODELS[0]["value"], show, hide, hide)
     elif provider == "gemini":
         return (show, hide, hide, _GEMINI_MODELS, _GEMINI_MODELS[0]["value"], show, hide, hide)
     elif provider == "openai":
         return (show, hide, hide, [], "", hide, show, show)
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
     else:  # ollama
         options = _fetch_ollama_models()
         if not options:
@@ -724,11 +679,7 @@ def on_provider_change(provider, _refresh, current_model):
         default = (current_model
                    if any(o["value"] == current_model for o in options)
                    else options[0]["value"])
-<<<<<<< HEAD
-        return (hide, show, show, options, default, show, hide)
-=======
         return (hide, show, show, options, default, show, hide, hide)
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 
 
 # 2a. Pull Ollama model (background thread with streaming progress)
@@ -816,20 +767,6 @@ def update_pull_status(_):
     State("dd-ai-model",         "value"),
     State("inp-model-custom",    "value"),
     State("inp-api-key",         "value"),
-<<<<<<< HEAD
-    State("dd-personality",      "value"),
-    prevent_initial_call=True,
-)
-def apply_provider(_, provider, model_select, model_custom, api_key, personality):
-    from providers import create_provider, PERSONALITIES
-    provider = provider or "ollama"
-    model = (model_custom or "gpt-4o-mini").strip() if provider == "openai" else (model_select or "llama3")
-    try:
-        p = create_provider(provider, model, api_key or "")
-        with state.lock:
-            state.provider      = p
-            state.provider_name = provider or "ollama"
-=======
     State("inp-base-url",        "value"),
     State("dd-personality",      "value"),
     prevent_initial_call=True,
@@ -847,7 +784,6 @@ def apply_provider(_, provider, model_select, model_custom, api_key, base_url, p
             state.provider_name = provider or "ollama"
             state.api_key       = api_key
             state.api_base_url  = base_url
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
             state.ai_model      = model or "llama3"
             state.personality   = personality or "balanced"
             state.last_reasoning = ""
@@ -1191,8 +1127,6 @@ def poll_bt_results(_):
 
 
 # ---------------------------------------------------------------------------
-<<<<<<< HEAD
-=======
 # Committee tab helpers
 # ---------------------------------------------------------------------------
 
@@ -1205,7 +1139,6 @@ _ACTION_COLORS = {
 
 def _agent_card(vote):
     color = _ACTION_COLORS.get(vote.action, "secondary")
-    ev_items = [html.Li(e, className="small") for e in (vote.evidence or [])[:3]]
     return dbc.Col(
         dbc.Card([
             dbc.CardHeader(
@@ -1215,11 +1148,10 @@ def _agent_card(vote):
                 ], className="align-items-center g-0"),
                 className="py-2",
             ),
-            dbc.CardBody([
-                html.P(f"Confidence: {vote.confidence:.0%}", className="small text-secondary mb-1"),
-                html.P(vote.reasoning[:300], className="small mb-2"),
-                html.Ul(ev_items, className="ps-3 mb-0") if ev_items else html.Span(),
-            ]),
+            dbc.CardBody(
+                html.P(vote.reasoning, className="small mb-0",
+                       style={"whiteSpace": "pre-wrap"}),
+            ),
         ], className="h-100"),
         width=3,
     )
@@ -1236,14 +1168,14 @@ def _coordinator_card(decision, lessons):
     return dbc.Card([
         dbc.CardHeader(
             dbc.Row([
-                dbc.Col(html.Span("Coordinator (final decision)", className="fw-semibold"), width=True),
+                dbc.Col(html.Span("Coordinator — final decision", className="fw-semibold"), width=True),
                 dbc.Col(dbc.Badge(decision.action, color=color, className="px-3 fs-6"), width="auto"),
             ], className="align-items-center g-0"),
             className="py-2",
         ),
         dbc.CardBody([
-            html.P(f"Confidence: {decision.confidence:.0%}", className="small text-secondary mb-1"),
-            html.P(decision.reasoning, className="small mb-2"),
+            html.P(decision.reasoning, className="small mb-2",
+                   style={"whiteSpace": "pre-wrap"}),
             (html.Div([
                 html.P("Memory lessons applied:", className="small fw-semibold mb-1"),
                 *lesson_items,
@@ -1746,7 +1678,6 @@ def poll_adversarial(_):
 
 
 # ---------------------------------------------------------------------------
->>>>>>> c0748ba (Add multi-agent committee, evaluation harness, adversarial suite, and TickerAI.md)
 # Entry point
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":

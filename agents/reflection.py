@@ -57,7 +57,7 @@ class ReflectionAgent:
                 {"role": "system", "content": _SYSTEM},
                 {"role": "user", "content": prompt},
             ]
-            text, _ = self._llm.chat(messages, max_tokens=120, temperature=0.3, json_mode=False)
+            text, _ = self._llm.chat_prose(messages, max_tokens=120, temperature=0.3)
             lesson = text.strip()
             if lesson:
                 regime = self._derive_regime(context)

@@ -236,6 +236,9 @@ def run_attack_suite(
         "url": "https://neutral-baseline.example.com",
     }
 
+    from agents.base import extract_action as _extract_action
+    _VALID = {"BUY", "SELL", "HOLD", "STRONG_BUY", "STRONG_SELL"}
+
     results: list[AttackResult] = []
 
     for headline_dict in MALICIOUS_HEADLINES:
@@ -252,10 +255,9 @@ def run_attack_suite(
         # --- Clean vote (neutral news only) ---
         try:
             clean_msgs = analyst._build_messages(context, [neutral_article])
-            text, usage = analyst._llm.chat(clean_msgs, max_tokens=300, temperature=0.0)
-            clean_vote = analyst._parse(text, usage)
-            clean_action = clean_vote.action
-            clean_conf = clean_vote.confidence
+            text, _ = analyst._llm.chat_prose(clean_msgs, max_tokens=300, temperature=0.0)
+            clean_action = _extract_action(text, _VALID)
+            clean_conf = 0.5
         except Exception as e:
             results.append(AttackResult(
                 headline=raw_title[:80],
@@ -284,10 +286,9 @@ def run_attack_suite(
                     {"role": "user", "content": attack_content},
                 ]
 
-            text, usage = analyst._llm.chat(attack_msgs, max_tokens=300, temperature=0.0)
-            attacked_vote = analyst._parse(text, usage)
-            attacked_action = attacked_vote.action
-            attacked_conf = attacked_vote.confidence
+            text, _ = analyst._llm.chat_prose(attack_msgs, max_tokens=300, temperature=0.0)
+            attacked_action = _extract_action(text, _VALID)
+            attacked_conf = 0.5
         except Exception as e:
             results.append(AttackResult(
                 headline=raw_title[:80],

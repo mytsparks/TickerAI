@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-import json
-import re
-
-from agents.base import Agent, AgentVote
+from agents.base import Agent, AgentVote, extract_action
 
 _VALID_ACTIONS = {"BUY", "SELL", "HOLD", "STRONG_BUY", "STRONG_SELL"}
 
 _SYSTEM = (
-    "You are a quantitative TechnicalAnalyst. Your sole job is to vote on a trading action "
-    "based ONLY on technical indicators and price action data. Do NOT speculate about news, "
-    "fundamentals, or events. Be decisive — HOLD means neither buy nor sell, not uncertainty."
+    "You are a quantitative TechnicalAnalyst. Analyze the provided price and indicator data "
+    "and write a concise 2-3 sentence assessment. End your response by stating your recommended "
+    "action: BUY, SELL, HOLD, STRONG_BUY, or STRONG_SELL."
 )
 
 
@@ -30,14 +27,20 @@ class TechnicalAnalyst(Agent):
             {"role": "user",   "content": prompt},
         ]
         try:
-            text, usage = self._llm.chat(messages, max_tokens=400, temperature=0.2)
-            return self._parse(text, context, usage)
+            text, usage = self._llm.chat_prose(messages, max_tokens=200, temperature=0.2)
+            return AgentVote(
+                agent_name=self.name,
+                action=extract_action(text, _VALID_ACTIONS),
+                confidence=0.5,
+                reasoning=text.strip(),
+                token_usage=usage,
+            )
         except Exception as e:
             return AgentVote(
                 agent_name=self.name,
                 action="HOLD",
                 confidence=0.5,
-                reasoning=f"TechnicalAnalyst error [endpoint: {self._llm.endpoint}]: {e}",
+                reasoning=f"Error: {self._llm.endpoint} — {e}",
             )
 
     def _build_prompt(self, context: dict) -> str:
@@ -81,39 +84,4 @@ CANDLESTICK PATTERNS:
 HISTORICAL CONTEXT:
 {hist_block}
 
-Respond with a JSON object only:
-{{
-  "action": "HOLD",
-  "confidence": 0.6,
-  "reasoning": "1-2 sentence technical rationale.",
-  "evidence": ["RSI: 45 (neutral)", "MACD histogram positive"]
-}}
-action must be one of: BUY, SELL, HOLD, STRONG_BUY, STRONG_SELL
-confidence: 0.0-1.0
-evidence: list of 2-4 specific indicator readings that drove your decision"""
-
-    def _parse(self, text: str, context: dict, usage: dict) -> AgentVote:
-        text = re.sub(r"```(?:json)?\s*", "", text).strip()
-        try:
-            data = json.loads(text)
-        except json.JSONDecodeError:
-            m = re.search(r"\{[^{}]+\}", text, re.DOTALL)
-            data = json.loads(m.group()) if m else {}
-
-        action = str(data.get("action", "HOLD")).upper().strip()
-        if action not in _VALID_ACTIONS:
-            action = "HOLD"
-        confidence = max(0.0, min(1.0, float(data.get("confidence", 0.5))))
-        reasoning = str(data.get("reasoning", "")).strip() or "(no reasoning)"
-        evidence = data.get("evidence", [])
-        if not isinstance(evidence, list):
-            evidence = [str(evidence)]
-
-        return AgentVote(
-            agent_name=self.name,
-            action=action,
-            confidence=confidence,
-            reasoning=reasoning,
-            evidence=evidence,
-            token_usage=usage,
-        )
+Write a 2-3 sentence technical analysis of these indicators and conclude with your recommended action."""
